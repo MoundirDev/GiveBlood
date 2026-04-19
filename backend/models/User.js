@@ -4,12 +4,12 @@ import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
 
-  name: {
+  username: {
     type: String,
     required: true
   },
 
-  full_name: {
+  fullname: {
     type: String,
     required: true
     // "Full name" (page 4)
@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
     default: 'donor'
   },
 
-  blood_type: {
+  bloodType: {
     type: String,
     enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
     // "Blood type" (page 4)

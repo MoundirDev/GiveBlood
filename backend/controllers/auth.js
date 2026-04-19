@@ -8,8 +8,12 @@ import { createJWT } from "../utils/jwtAuth.js";
 export async function register(req, res, next) {
 
     const username = req.body.username?.trim();
+    const fullname = req.body.fullname?.trim(); 
     const email = validator.normalizeEmail(req.body.email || "");
     const password = req.body.password;
+    const bloodType = req.body.bloodType;
+    const city = req.body.city?.trim();
+
     const errors = [];
 
     //! input validation : 
@@ -40,39 +44,45 @@ export async function register(req, res, next) {
         return res.status(422).json({ errors });
     }
 
-    const existingUser = await User.findOne({ $or: [{username}, {email}] });
-    if(existingUser){
-        if(existingUser.username == username) errors.push({message: "Username already in use."});
-        if(existingUser.email == email) errors.push({message: "Email address already exists"});
-        return res.status(409).json({ errors })
-    }
-
-    //! password hashing: 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // ! saving user to db: 
-    const user = new User({
-        username,
-        email,
-        password: hashedPassword
-    })
-    await user.save();
-
-    //! log the user in using cookie: 
-    const token = createJWT(user);
+    try{
+        const existingUser = await User.findOne({ $or: [{username}, {email}] });
+        if(existingUser){
+            if(existingUser.username == username) errors.push({message: "Username already in use."});
+            if(existingUser.email == email) errors.push({message: "Email address already exists"});
+            return res.status(409).json({ errors })
+        }
     
-    res.cookie("giveblood-token", token, {
-        httpOnly: true,
-        sameSite: "strict",
-        maxAge: 24 * 60 * 60 * 1000   // valide for 24h
-    });
-    user = user.toObject();
-    delete user.password;   
-
-    return res.status(201).json({
-        user,
-        message: "Account created successfully"
-    });
+        // ! saving user to db: 
+        let user = new User({
+            username,
+            fullname,
+            email,
+            password,
+            bloodType,
+            city
+        })
+        await user.save();
+    
+        //! log the user in using cookie: 
+        const token = createJWT(user);
+        
+        res.cookie("giveblood_token", token, {
+            httpOnly: true,
+            sameSite: "strict",
+            maxAge: 24 * 60 * 60 * 1000   // valide for 24h
+        });
+        user = user.toObject();
+        delete user.password;   
+    
+        return res.status(201).json({
+            user,
+            message: "Account created successfully"
+        });
+    }
+    catch(error){
+        console.log(error);
+        return res.status(500).json({message: "Server Side Error"});
+    }
 }
 
 
@@ -88,37 +98,49 @@ export async function login(req, res, next){
         return res.status(400).json({ message: "Email/username and password required."});
     }    
 
-    //! find user and compare passwords
-    let user = await User.findOne({$or: [{email}, {username}]});
-
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-        return res.status(401).json({ message: "Invalid credentials."});
+    try{
+        //! find user and compare passwords
+        let user = await User.findOne({$or: [{email}, {username}]});
+    
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ message: "Invalid credentials."});
+        }
+    
+        //! send json web token using cookie
+        const token = createJWT(user);
+    
+        res.cookie("giveblood_token", token, {
+            httpOnly: true,
+            sameSite: "strict",
+            maxAge: 24 * 60 * 60 * 1000   // valide for 24h
+        });
+        user = user.toObject();
+        delete user.password;
+    
+        return res.status(200).json({
+            user,
+            message: "Logged in successfully."
+        })
     }
-
-    //! send json web token using cookie
-    const token = createJWT(user);
-
-    res.cookie("giveblood_token", token, {
-        httpOnly: true,
-        sameSite: "strict",
-        maxAge: 24 * 60 * 60 * 1000   // valide for 24h
-    });
-    user = user.toObject();
-    delete user.password;
-
-    return res.status(200).json({
-        user,
-        message: "Logged in successfully."
-    })
+    catch(error){
+        console.log(error);
+        return res.status(500).json({message: "Server Side Error"});
+    }
 }
 
 
 export async function logout(req, res, next) {
 
-    res.clearCookie("giveblood_token", {
-        httpOnly: true,
-        sameSite: "strict",
-    });
-
-    return res.status(200).json({ message: "Logged out successfully"});
+    try{
+        res.clearCookie("giveblood_token", {
+            httpOnly: true,
+            sameSite: "strict",
+        });
+    
+        return res.status(200).json({ message: "Logged out successfully"});
+    }
+    catch(error){
+        console.log(error);
+        return res.status(500).json({message: "Server Side Error"});
+    }
 }
