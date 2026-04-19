@@ -1,7 +1,7 @@
 import validator from "validator";
 import bcrypt from "bcrypt";
 
-import { User } from "../models/user.js";
+import { User } from "../models/User.js";
 import { createJWT } from "../utils/jwtAuth.js";
 
 

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +19,6 @@
     "mongoos": "^0.0.1-security",
     "nodemon": "^3.1.14",
     "validator": "^13.15.35"
-  }
+  },
+  "type": "module"
 }

@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import { router as authRoutes } from "./routes/auth.js";
 import { connectDB } from "./config/db.js";
@@ -23,5 +25,5 @@ app.use('/auth', authRoutes);
 connectDB()
     .then( () => {
         app.listen(process.env.PORT);     //! backend port: 5000
-        console.log("Server is running on localhost:8080");
+        console.log("Server is running on localhost:5000");
     })
