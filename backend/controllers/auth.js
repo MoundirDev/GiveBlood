@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 
 import { User } from "../models/User.js";
 import { createJWT } from "../utils/jwtAuth.js";
+import { Hospital } from "../models/Hospital.js";
 
 
 export async function register(req, res, next) {
@@ -64,7 +65,7 @@ export async function register(req, res, next) {
         await user.save();
     
         //! log the user in using cookie: 
-        const token = createJWT(user);
+        const token = createJWT(user, "donnor");
         
         res.cookie("giveblood_token", token, {
             httpOnly: true,
@@ -107,7 +108,7 @@ export async function login(req, res, next){
         }
     
         //! send json web token using cookie
-        const token = createJWT(user);
+        const token = createJWT(user, "donnor");
     
         res.cookie("giveblood_token", token, {
             httpOnly: true,
@@ -138,6 +139,48 @@ export async function logout(req, res, next) {
         });
     
         return res.status(200).json({ message: "Logged out successfully"});
+    }
+    catch(error){
+        console.log(error);
+        return res.status(500).json({message: "Server Side Error"});
+    }
+}
+
+
+export async function hospitalLogin(req, res, next){
+    
+    const name = req.body.name?.trim();
+    const email = validator.normalizeEmail(req.body?.email || "");
+    const address = req.body.address;
+    const password = req.body.password;
+
+    if(!name || !email || !address || ! password){
+        return res.status(400).json({ message: "All fields are required."});
+    }
+
+    try{
+        //! find hospital and compare passwords
+        let hospital = await Hospital.findOne({$or: [{email}, {name}]});
+    
+        if (!hospital || !(await bcrypt.compare(password, hospital.password))) {
+            return res.status(401).json({ message: "Invalid credentials."});
+        }
+    
+        //! send json web token using cookie
+        const token = createJWT(hospital, "hospital");
+    
+        res.cookie("giveblood_token", token, {
+            httpOnly: true,
+            sameSite: "strict",
+            maxAge: 24 * 60 * 60 * 1000   // valide for 24h
+        });
+        hospital = hospital.toObject();
+        delete hospital.password;
+    
+        return res.status(200).json({
+            hospital,
+            message: "Logged in successfully."
+        })
     }
     catch(error){
         console.log(error);
