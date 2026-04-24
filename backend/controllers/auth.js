@@ -5,7 +5,7 @@ import { User } from "../models/User.js";
 import { createJWT } from "../utils/jwtAuth.js";
 import { Hospital } from "../models/Hospital.js";
 
-
+//! this route passed all the tests
 export async function register(req, res, next) {
 
     const username = req.body.username?.trim();
@@ -65,7 +65,7 @@ export async function register(req, res, next) {
         await user.save();
     
         //! log the user in using cookie: 
-        const token = createJWT(user, "donnor");
+        const token = createJWT(user, "donor");
         
         res.cookie("giveblood_token", token, {
             httpOnly: true,
@@ -86,29 +86,28 @@ export async function register(req, res, next) {
     }
 }
 
-
+//! this route passed all the tests
 export async function login(req, res, next){
     
 
     const email = validator.normalizeEmail(req.body?.email || "");
-    const username = req.body.username?.trim();
     const password = req.body.password;
 
     //! validate user input
-    if ((!email && !username) || !password) {
+    if (!email || !password) {
         return res.status(400).json({ message: "Email/username and password required."});
     }    
 
     try{
         //! find user and compare passwords
-        let user = await User.findOne({$or: [{email}, {username}]});
+        let user = await User.findOne({ email });
     
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ message: "Invalid credentials."});
         }
     
         //! send json web token using cookie
-        const token = createJWT(user, "donnor");
+        const token = createJWT(user, "donor");
     
         res.cookie("giveblood_token", token, {
             httpOnly: true,
@@ -129,7 +128,7 @@ export async function login(req, res, next){
     }
 }
 
-
+//! this route passed all the tests
 export async function logout(req, res, next) {
 
     try{
@@ -146,7 +145,7 @@ export async function logout(req, res, next) {
     }
 }
 
-
+//! to test this route we need hospitalRegister route(not found in design)
 export async function hospitalLogin(req, res, next){
     
     const name = req.body.name?.trim();

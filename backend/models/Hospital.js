@@ -6,11 +6,9 @@ const hospitalSchema = new mongoose.Schema({
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
 
-  location: {
-    type:        { type: String, default: 'Point' },
-    coordinates: [Number],
-    city:        String,
-    state:       String
+  address: {
+    type: String,
+    required: true
   },
 
   isValid:   { type: Boolean, default: false },
@@ -19,9 +17,10 @@ const hospitalSchema = new mongoose.Schema({
 
 hospitalSchema.index({ location: '2dsphere' });
 
-hospitalSchema.pre('save', async function(next) {
+hospitalSchema.pre('save', async function() {
   if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
+
 
 export const Hospital = mongoose.model('Hospital', hospitalSchema);

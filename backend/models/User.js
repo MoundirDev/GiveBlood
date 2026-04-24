@@ -39,15 +39,6 @@ const userSchema = new mongoose.Schema({
   },
 
   city: {
-    type: String
-    // "City" (page 4)
-  },
-
-  location: {
-    type: { type: String, default: 'Point' },
-    coordinates: [Number],
-    city: String,
-    state: {
       type: String,
       enum: [
         'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi',
@@ -68,7 +59,6 @@ const userSchema = new mongoose.Schema({
         'El Mghair', 'El Meniaa'
       ]
     },
-  },
 
   available: {
     type: Boolean,
@@ -79,10 +69,10 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index({ location: '2dsphere' });
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
   if (!this.isModified('password')) return;
+
   this.password = await bcrypt.hash(this.password, 10);
-  next();
 });
 
 export const User = mongoose.model('User', userSchema);
