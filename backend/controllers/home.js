@@ -1,6 +1,7 @@
 import { User } from "../models/User.js";
 import { Appointment } from "../models/Appointment.js";
 import { Hospital } from "../models/Hospital.js";
+import { transporter } from "../utils/emailTransporter.js";
 
 
 export async function scheduleAppointment(req, res, next) {
@@ -9,28 +10,107 @@ export async function scheduleAppointment(req, res, next) {
   const bloodType = req.body.bloodType;
 
   try {
-    if (!hospitalName || !date || !bloodType) {
-      return res.status(400).json({ message: "All fields are required." });
-    }
+	if (!hospitalName || !date || !bloodType) {
+	  return res.status(400).json({ message: "All fields are required." });
+	}
 
-    const hospital = await Hospital.findOne({ name: hospitalName });
-    if (!hospital) {
-      return res.status(404).json({ message: "Hospital not found" });
-    }
+	const hospital = await Hospital.findOne({ name: hospitalName });
+	if (!hospital) {
+	  return res.status(404).json({ message: "Hospital not found" });
+	}
 
-    const appointment = new Appointment({
-      donorId: req.user._id,
-      hospitalId: hospital._id,
-      date: new Date(date),
-      bloodType
-    });
+	const appointment = new Appointment({
+	  donorId: req.user._id,
+	  hospitalId: hospital._id,
+	  date: new Date(date),
+	  bloodType
+	});
 
-    await appointment.save();
+	await appointment.save();
 
-    return res.status(201).json({ message: "Appointment created successfully" });
+	return res.status(201).json({ message: "Appointment created successfully" });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Server side error" });
+	console.log(error);
+	return res.status(500).json({ message: "Server side error" });
   }
 }
 
+
+export async function searchDonors(req, res, next){
+
+	const city = req.body.city;
+	const bloodType = req.body.bloodType;
+	// //! no need to that email field again, already got the user's email
+
+	try{
+		if (!city || !bloodType) {
+			return res.status(400).json({ message: "City and blood type are required" });
+		}
+	
+		const donors = await User.find({ city, bloodType}).select('-password');
+
+		if (!donors.length) {
+			return res.status(404).json({ message: "No donors found" });
+		}
+		const sender = req.user;
+
+		for (const donor of donors) {
+			await transporter.sendMail({
+			from: `"GiveBlood 🩸" <${process.env.EMAIL_USER}>`,
+			to: donor.email,
+			subject: "Urgent Blood Donation Request",
+
+			html: `
+			<div style="font-family: Arial, sans-serif; background-color: #ffffff; padding: 20px;">
+				
+				<div style="max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+				
+				<div style="background-color: #c1121f; color: white; padding: 15px; text-align: center;">
+					<h2>🩸 Blood Donation Request</h2>
+				</div>
+
+				<div style="padding: 20px; color: #333;">
+					<p>Hello,</p>
+
+					<p>
+					A patient in <strong style="color:#c1121f;">${city}</strong> urgently needs 
+					<strong style="color:#c1121f;">${bloodType}</strong> blood.
+					</p>
+
+					<p>
+					<strong>Requester Info:</strong><br/>
+					Name: ${sender.fullname}<br/>
+					Email: ${sender.email}
+					</p>
+
+					<p style="margin-top:20px;">
+					If you are available, please consider helping save a life ❤️
+					</p>
+
+					<div style="text-align:center; margin-top: 25px;">
+					<a href="mailto:${sender.email}" 
+						style="background-color:#c1121f; color:white; padding:12px 20px; 
+								text-decoration:none; border-radius:5px;">
+						Contact Now
+					</a>
+					</div>
+				</div>
+
+				<div style="background:#f8f8f8; padding:10px; text-align:center; font-size:12px;">
+					Thank you for being a hero 🩸
+				</div>
+
+				</div>
+			</div>
+			`,
+		});
+		}
+
+    	return res.status(200).json({ message: "Emails sent to donors" });
+
+	}catch(error){
+		console.log(error);
+		return res.status(500).json({message: "Server Side Error"});
+	}
+
+}

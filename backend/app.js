@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 import { router as authRoutes } from "./routes/auth.js";
+import { router as homeRoutes } from "./routes/home.js";
 import { connectDB } from "./config/db.js";
 
 
@@ -20,6 +21,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use('/auth', authRoutes);
+app.use('/home', homeRoutes);
 
 
 connectDB()
