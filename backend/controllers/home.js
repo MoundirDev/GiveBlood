@@ -2,6 +2,7 @@ import { User } from "../models/User.js";
 import { Appointment } from "../models/Appointment.js";
 import { Hospital } from "../models/Hospital.js";
 import { transporter } from "../utils/emailTransporter.js";
+import { Event } from "../models/Event.js";
 
 
 export async function scheduleAppointment(req, res, next) {
@@ -113,4 +114,42 @@ export async function searchDonors(req, res, next){
 		return res.status(500).json({message: "Server Side Error"});
 	}
 
+}
+
+export async function createEvent(req, res, next){
+
+	const organizationName = req.body.organizationName;
+	const email = validator.normalizeEmail(req.body.email);
+	const date = req.body.date;
+	const hour = req.body.hour;
+	const eventLink = req.body?.eventLink;
+
+	try{
+		if(!organizationName || !email || !date || !hour){
+			return res.status(400).json({ message: "All fields are required"});
+		}
+		
+		else if (!validator.isEmail(email)) {
+			return res.status(400).json({ message: "Invalid email" });
+		}
+		const parsedDate = new Date(date);
+		if (isNaN(parsedDate) || parsedDate < new Date()) {
+			return res.status(400).json({ message: "Invalid date" });
+		}
+
+		const event = new Event({
+			userId: req.user._id,
+			organizationName,
+			email,
+			eventDate: parsedDate,
+			hour,
+			eventLink,
+		});
+		await event.save();
+
+		return res.status(201).json({ message: "Event created successfully" });
+	}catch(error){
+		console.log(error);
+		return res.status(500).json({message: "Server side error"});
+	}
 }
