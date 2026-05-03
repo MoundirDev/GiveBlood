@@ -164,3 +164,33 @@ export async function getProfile(req, res, next) {
 		return res.status(500).json({message: "Server side error"});	
 	}
 }
+
+export async function editProfile(req, res, next) {
+	try {
+		const { imageUrl, fullname, bloodType } = req.body;
+
+		const userId = req.user._id; 
+
+		const updatedUser = await User.findByIdAndUpdate(
+			userId,
+			{
+				...(imageUrl && { imageUrl }),
+				...(fullname && { fullname }),
+				...(bloodType && { bloodType }),
+			},
+			{
+				new: true
+			}
+		).select("-password");
+
+		if (!updatedUser) {
+			return res.status(404).json({message: "User not found"});
+		}
+
+		res.status(200).json({message: "Profile updated successfully", user: updatedUser});
+
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({message: "Server side error"});	
+	}
+}

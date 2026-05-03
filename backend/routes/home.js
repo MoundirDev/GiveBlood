@@ -1,5 +1,5 @@
 import express from "express";
-import { createEvent, getProfile, scheduleAppointment, searchDonors } from "../controllers/home.js";
+import { createEvent, editProfile, getProfile, scheduleAppointment, searchDonors } from "../controllers/home.js";
 import { isAuth } from "../utils/jwtAuth.js";
 
 export const router = express.Router();
@@ -11,3 +11,5 @@ router.post('/search-donors', isAuth, searchDonors);
 router.post('/create-event', isAuth, createEvent);
 
 router.get('/profile', isAuth, getProfile);
+
+router.patch('/edit-profile', isAuth, editProfile);

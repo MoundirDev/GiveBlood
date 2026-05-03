@@ -31,7 +31,10 @@ const userSchema = new mongoose.Schema({
     enum: ['donor', 'admin'],
     default: 'donor'
   },
-
+  imageUrl: {
+    type: String,
+    default: null
+  },
   bloodType: {
     type: String,
     enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
