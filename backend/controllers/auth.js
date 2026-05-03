@@ -247,3 +247,45 @@ export async function hospitalRegister(req, res, next){
         return res.status(500).json({message: "Server Side Error"});
     }
 }
+
+export async function changePassword(req, res, next){
+    const { currentPassword, newPassword, confirmPassword} = req.body;
+
+    const errors = [];
+    const user = req.user
+    //! input validation : 
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        errors.push({message: "All fields are required."});
+    }
+    if (newPassword && !validator.isLength(newPassword, { min: 8, max: 30 })) {
+        errors.push({message: "Password must be 8-30 characters long."});
+    }
+    if (newPassword && !validator.isStrongPassword(newPassword, {
+        minNumbers: 1,
+        minSymbols: 0,
+        minLowercase: 1,
+        minUppercase: 0
+    })) {
+        errors.push({message: "Password must include at least one number."});
+    }
+    try{
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) errors.push({ message: "Wrong credentials" });
+        if(confirmPassword !== newPassword){
+            errors.push({message: "Passwords do not match"});
+        }
+        if (errors.length > 0) {
+            return res.status(422).json({ errors });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        return res.status(200).json({message: "Password updated successfully."})
+    }catch(error){
+        console.log(error);
+        return res.status(500).json({message: "Server Side Error"});
+    }
+
+}
