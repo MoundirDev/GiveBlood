@@ -9,7 +9,6 @@ export function createJWT(user, role){
 
     const payload = {
         userId: user._id,
-        username: user.username,
         role
     }
     const config = { expiresIn: '24h' }

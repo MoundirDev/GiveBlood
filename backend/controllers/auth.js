@@ -21,12 +21,6 @@ export async function register(req, res, next) {
     if (!username || !email || !password) {
         errors.push({message: "All fields are required."});
     }
-    if (username && !validator.isLength(username, { min: 5, max: 20 })) {
-        errors.push({message: "Username must be 5-20 characters long."});
-    }
-    if (username && !validator.isAlphanumeric(username, "en-US", { ignore: "_.- " })) {
-        errors.push({message: "Username contains invalid characters."});
-    }
     if (email && !validator.isEmail(email)) {
         errors.push({message: "Invalid email address."});
     }
@@ -148,18 +142,16 @@ export async function logout(req, res, next) {
 //! to test this route we need hospitalRegister route(not found in design)
 export async function hospitalLogin(req, res, next){
     
-    const name = req.body.name?.trim();
     const email = validator.normalizeEmail(req.body?.email || "");
-    const address = req.body.address;
     const password = req.body.password;
 
-    if(!name || !email || !address || ! password){
+    if(!email || ! password){
         return res.status(400).json({ message: "All fields are required."});
     }
 
     try{
         //! find hospital and compare passwords
-        let hospital = await Hospital.findOne({$or: [{email}, {name}]});
+        let hospital = await Hospital.findOne({email});
     
         if (!hospital || !(await bcrypt.compare(password, hospital.password))) {
             return res.status(401).json({ message: "Invalid credentials."});
@@ -180,6 +172,75 @@ export async function hospitalLogin(req, res, next){
             hospital,
             message: "Logged in successfully."
         })
+    }
+    catch(error){
+        console.log(error);
+        return res.status(500).json({message: "Server Side Error"});
+    }
+}
+
+//! this route page was not found in the design too
+export async function hospitalRegister(req, res, next){
+    const name = req.body.name?.trim();
+    const email = validator.normalizeEmail(req.body.email || "");
+    const password = req.body.password;
+    const address = req.body.address?.trim();
+
+    const errors = [];
+
+    //! input validation : 
+    if (!email || !password || !name || !address) {
+        errors.push({message: "All fields are required."});
+    }
+    if (email && !validator.isEmail(email)) {
+        errors.push({message: "Invalid email address."});
+    }
+    if (password && !validator.isLength(password, { min: 8, max: 30 })) {
+        errors.push({message: "Password must be 8-30 characters long."});
+    }
+    if (password && !validator.isStrongPassword(password, {
+        minNumbers: 1,
+        minSymbols: 0,
+        minLowercase: 1,
+        minUppercase: 0
+    })) {
+        errors.push({message: "Password must include at least one number."});
+    }
+    if (errors.length > 0) {
+        return res.status(422).json({ errors });
+    }
+
+    try{
+        const existingHospital = await Hospital.findOne({email});
+        if(existingHospital){
+            if(existingHospital) errors.push({message: "Email address already exists"});
+            return res.status(409).json({ errors })
+        }
+        
+        // ! saving hospital to db: 
+        let hospital = new Hospital({
+            name,
+            email,
+            password,
+            address
+        })
+        await hospital.save();
+    
+        //! log the hospital in using cookie: 
+        const token = createJWT(hospital, "hospital");
+        
+        res.cookie("giveblood_token", token, {
+            httpOnly: true,
+            sameSite: "strict",
+            maxAge: 24 * 60 * 60 * 1000   // valide for 24h
+        });
+        hospital = hospital.toObject();
+        delete hospital.password;   
+    
+        return res.status(201).json({
+            hospital,
+            message: "Account created successfully"
+        });
     }
     catch(error){
         console.log(error);
