@@ -194,3 +194,55 @@ export async function editProfile(req, res, next) {
 		return res.status(500).json({message: "Server side error"});	
 	}
 }
+
+
+export async function getEvents(req, res, next) {
+	try {
+		const { filter = "everything" } = req.query;
+
+		let query = {};
+
+		const now = new Date();
+
+		if (filter === "today") {
+			const startOfDay = new Date();
+			startOfDay.setHours(0, 0, 0, 0);
+
+			const endOfDay = new Date();
+			endOfDay.setHours(23, 59, 59, 999);
+
+			query.eventDate = {
+				$gte: startOfDay,
+				$lte: endOfDay,
+			};
+		}
+
+		else if (filter === "next week") {
+			const nextWeek = new Date();
+			nextWeek.setDate(now.getDate() + 7);
+
+			query.eventDate = {
+				$gte: now,
+				$lte: nextWeek,
+			};
+		}
+
+		else if (filter === "next month") {
+			const nextMonth = new Date();
+			nextMonth.setMonth(now.getMonth() + 1);
+
+			query.eventDate = {
+				$gte: now,
+				$lte: nextMonth,
+			};
+		}
+
+		const events = await Event.find(query)
+			.sort({ eventDate: 1 });
+
+		res.status(200).json({ success: true, count: events.length, events});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({message: "Server side error"});	
+	}
+}
